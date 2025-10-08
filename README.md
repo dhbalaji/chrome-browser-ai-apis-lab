@@ -34,7 +34,7 @@ From **language detection** to **summarization**, **image recognition**, and wha
 
 1. Clone the repo  
    ```bash
-   git clone https://github.com/<your-username>/chrome-browser-ai-apis-lab.git
+   git clone https://github.com/dhbalaji/chrome-browser-ai-apis-lab.git
    cd chrome-browser-ai-apis-lab
    ```
 2. Enable experimental flags (if needed): Go to chrome://flags
