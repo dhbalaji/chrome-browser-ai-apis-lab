@@ -1,9 +1,7 @@
 # 🧠 Chrome Browser AI APIs Lab
 
-Welcome to the **Chrome Browser AI APIs Lab** —  
-your experimental playground for Chrome’s built-in AI superpowers.  
-
-From **language detection** to **summarization**, **image recognition**, and whatever Google secretly slips into Chrome next — this repo is where I poke, prod, and occasionally break things (for science 🧪).  
+**Where Chrome flexes its AI muscles.**  
+An experimental playground for Chrome’s built-in AI APIs — language detection, summarization, image tricks, and whatever shiny thing Google sneaks into Beta next. We toggle flags, break stuff, and learn fast.
 
 ---
 
@@ -13,7 +11,8 @@ From **language detection** to **summarization**, **image recognition**, and wha
 - 🌐 Most APIs here are **Chrome-only**, sorry Firefox fam.  
 - 💻 Your **laptop might just give up** if the hardware isn’t AI-friendly.  
 - 🧩 I try to write **production-grade examples**, not just console.log magic.  
-- 💙 Assumes you speak **TypeScript** and vibe with **intermediate JS APIs**.  
+- 💙 Assumes you speak **TypeScript** and vibe with **intermediate JS APIs**.
+- 🔔 You might need **Chrome Beta** and a few `chrome://flags` flips.  
 
 > “Google Codelabs are the most underrated tutorials on the planet.”  
 > — *A proud Google fanboy (me)*  
@@ -42,7 +41,7 @@ From **language detection** to **summarization**, **image recognition**, and wha
 
 3. Run your experiments: scripts vary based on the repo and you know how to work with `npm`, our mighty nodejs package manager
 
-4. Relatively latest version of node
+4. Use a recent LTS Node (recommended).
 
-5. Finally, bring in ample amounts of curiousity. Not your video course to binge and output.
+5. Bring curiosity, not a binge-watch mindset.
   
