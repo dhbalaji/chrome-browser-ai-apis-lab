@@ -1,3 +1,4 @@
-import useBrowserLanguageDetection from './useBrowserLanguageDetection';
+import useBrowserLanguageDetection from './lang-detection/useBrowserLanguageDetection';
+import useBrowserTranslator from './lang-translate/useBrowserTranslator';
 
-export { useBrowserLanguageDetection };
+export { useBrowserLanguageDetection, useBrowserTranslator };

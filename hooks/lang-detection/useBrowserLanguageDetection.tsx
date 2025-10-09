@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
+import { AvailabilityStatus, LanguageDetectorType } from "./types";
 
 // Add global type augmentation for LanguageDetector
 declare global {
@@ -10,18 +11,6 @@ declare global {
     isSecureContext: boolean;
   }
 }
-
-type LanguageDetectorResult = {
-  detectedLanguage: string;
-  confidence: number;
-};
-
-type LanguageDetectorType = {
-  detect(text: string): Promise<LanguageDetectorResult[]>;
-  destroy?(): void;
-};
-
-type AvailabilityStatus = "available" | "downloadable" | "downloading" | "unavailable";
 
 /**
  * Custom React hook for detecting the language of a text input using
