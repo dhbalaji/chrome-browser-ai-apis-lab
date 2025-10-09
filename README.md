@@ -21,11 +21,9 @@ An experimental playground for Chrome’s built-in AI APIs — language detectio
 
 ## ⚡ APIs Explored
 
-| API | What It Does | Usecase |
-|-----|---------------|---------------------------|
-| `LanguageDetector` | Detects the language of given text. | ✅ Take user input and reliable translate on submit |
+- https://developer.mozilla.org/en-US/docs/Web/API/Translator
+- https://developer.mozilla.org/en-US/docs/Web/API/LanguageDetector
 
-(Coming soon.. 🤖)
 
 ---
 
