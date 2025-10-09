@@ -1,6 +1,24 @@
 {
+  "name": "@dhbalaji/browser-ai-apis",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
   "devDependencies": {
+    "@rollup/plugin-json": "^6.1.0",
     "@types/react": "^19.2.2",
-    "react": "^19.2.0"
+    "react": "^19.2.0",
+    "rollup": "^4.52.4",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "peerDependencies": {
+    "react": "^16 || ^17 || ^18 || ^19"
   }
 }

@@ -25,7 +25,7 @@ type AvailabilityStatus = "available" | "downloadable" | "downloading" | "unavai
 
 /**
  * Custom React hook for detecting the language of a text input using
- * the Chrome Language Detector API.
+ * the Chrome Language Detector API. Works safely in SSR environments like Next.js.
  *
  * This hook handles API availability, model download state, and cleanup
  * internally, exposing a single async detection function.
@@ -43,9 +43,9 @@ export function useBrowserLanguageDetection(
   const languageDetectorInstanceRef = useRef<LanguageDetectorType | null>(null);
 
   /**
-   * Checks if the Language Detector API is supported and running in a secure context.
+   * Checks if the code runs client side and if the Language Detector API is supported.
    */
-  function isLanguageDetectorApiSupported(): boolean {
+  function canUseLanguageDetector(): boolean {
     return (
       typeof window !== "undefined" &&
       "LanguageDetector" in window &&
@@ -58,6 +58,9 @@ export function useBrowserLanguageDetection(
    * Possible return values: "available", "downloadable", "downloading", "unavailable".
    */
   async function getDetectorAvailability(): Promise<AvailabilityStatus> {
+    if (!canUseLanguageDetector()) {
+      return "unavailable";
+    }
     try {
       return (await window.LanguageDetector.availability()) as AvailabilityStatus;
     } catch {
@@ -93,10 +96,8 @@ export function useBrowserLanguageDetection(
     let componentIsMounted = true;
 
     async function initializeLanguageDetector() {
-      if (!isLanguageDetectorApiSupported()) {
-        console.error(
-          "LanguageDetector API is not supported or not available in this secure context."
-        );
+      if (!canUseLanguageDetector()) {
+        // Avoid running on server or unsupported browsers
         return;
       }
 
@@ -113,9 +114,7 @@ export function useBrowserLanguageDetection(
           languageDetectorInstanceRef.current = detector;
         }
       } else {
-        console.error(
-          `LanguageDetector API is not usable. Availability status: ${availability}`
-        );
+        // unavailable or unsupported
         return;
       }
     }
@@ -147,3 +146,5 @@ export function useBrowserLanguageDetection(
 
   return detectLanguage;
 }
+
+export default useBrowserLanguageDetection;
