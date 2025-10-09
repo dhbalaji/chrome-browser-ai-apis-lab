@@ -1,6 +1,6 @@
 # 🧠 Chrome Browser AI APIs Lab
 
-**Where Chrome flexes its AI muscles.**  
+**Where Chrome flexes its [AI muscles](https://developer.chrome.com/docs/ai).**  
 An experimental playground for Chrome’s built-in AI APIs — language detection, summarization, image tricks, and whatever shiny thing Google sneaks into Beta next. We toggle flags, break stuff, and learn fast.
 
 ---
@@ -43,3 +43,4 @@ An experimental playground for Chrome’s built-in AI APIs — language detectio
 
 5. Bring curiosity, not a binge-watch mindset.
   
+
