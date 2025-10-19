@@ -1,13 +1,38 @@
-import React from 'react';
-
 function TranslationForm({ 
   input, 
   onInputChange, 
   onTranslate, 
   detectedLang, 
-  isDisabled 
+  isDisabled,
+  supportedLanguages = ['te', 'ta'] // Default for backward compatibility
 }) {
-  const hasError = (detectedLang === null || (detectedLang && detectedLang !== 'te' && detectedLang !== 'ta')) && input.trim();
+  const hasError = (detectedLang === null || (detectedLang && !supportedLanguages.includes(detectedLang))) && input.trim();
+
+  // Generate dynamic help text based on supported languages
+  const getHelpText = () => {
+    const languageNames = {
+      'te': 'Telugu',
+      'ta': 'Tamil',
+      'en': 'English',
+      'hi': 'Hindi',
+      'es': 'Spanish',
+      'fr': 'French',
+      'de': 'German',
+      'it': 'Italian',
+      'pt': 'Portuguese',
+      'ru': 'Russian',
+      'ja': 'Japanese',
+      'ko': 'Korean',
+      'zh': 'Chinese',
+      'ar': 'Arabic'
+    };
+
+    const supportedLanguageNames = supportedLanguages
+      .map(lang => languageNames[lang] || lang)
+      .join(' or ');
+    
+    return `Enter text in ${supportedLanguageNames} to translate to English`;
+  };
 
   return (
     <section aria-labelledby="translation-form-heading" className="bg-white shadow-lg border border-gray-200 rounded-xl p-6 h-fit">
@@ -41,7 +66,7 @@ function TranslationForm({
             </p>
           ) : (
             <p id="input-help" className="mt-1 text-sm text-gray-500">
-              Enter text in Telugu or Tamil to translate to English
+              {getHelpText()}
             </p>
           )}
         </div>

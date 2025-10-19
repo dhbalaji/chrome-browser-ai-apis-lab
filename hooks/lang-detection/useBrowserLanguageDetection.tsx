@@ -84,9 +84,23 @@ export function useBrowserLanguageDetection(
     onDownloadProgress?: (event: ProgressEvent) => void,
     expectedLanguages?: string[]
   ): Promise<LanguageDetectorType> => {
-    const config: LanguageDetectorConfig = {
-      expectedInputLanguages: expectedLanguages,
-    };
+    // Ensure expectedLanguages is a valid array
+    let validExpectedLanguages: string[] | undefined = undefined;
+    
+    if (Array.isArray(expectedLanguages) && expectedLanguages.length > 0) {
+      // Create a new array to ensure it's properly formatted
+      validExpectedLanguages = [...expectedLanguages];
+    }
+    
+    console.log('Creating LanguageDetector with expectedLanguages:', validExpectedLanguages);
+    console.log('Original expectedLanguages:', expectedLanguages);
+    
+    const config: LanguageDetectorConfig = {};
+    
+    // Only add expectedInputLanguages if we have valid languages
+    if (validExpectedLanguages) {
+      config.expectedInputLanguages = validExpectedLanguages;
+    }
 
     // Add download progress monitoring if callback provided
     if (onDownloadProgress) {
@@ -97,7 +111,14 @@ export function useBrowserLanguageDetection(
       };
     }
 
-    return await window.LanguageDetector.create(config);
+    try {
+      console.log('LanguageDetector config:', config);
+      return await window.LanguageDetector.create(config);
+    } catch (error) {
+      console.error('Failed to create LanguageDetector:', error);
+      console.error('Config that failed:', config);
+      throw error;
+    }
   }, []);
 
   // ============================================================================
@@ -126,15 +147,19 @@ export function useBrowserLanguageDetection(
 
         // Create detector instance based on availability
         if (status === "available") {
+          console.log('Creating detector with status: available');
           const detector = await createDetectorInstance(undefined, expectedLanguages);
           if (isMounted) {
             detectorRef.current = detector;
+            console.log('Detector created successfully:', !!detector);
           }
         } else if (status === "downloadable" || status === "downloading") {
+          console.log('Creating detector with status:', status);
           // Create detector with download progress monitoring
           const detector = await createDetectorInstance(() => { }, expectedLanguages);
           if (isMounted) {
             detectorRef.current = detector;
+            console.log('Detector created successfully:', !!detector);
           }
         }
       } catch (error) {
@@ -177,11 +202,17 @@ export function useBrowserLanguageDetection(
     try {
       // Check if detector is available
       if (!detectorRef.current) {
+        console.log('Detector not available for language detection');
         return null;
       }
+      
+      console.log('Detector is available, proceeding with detection');
 
+      console.log('Detecting language for input:', inputText);
       // Get detection results from the API
       const results = await detectorRef.current.detect(inputText);
+      console.log('Language detection results:', results);
+
 
       // Handle empty or invalid results
       if (!results || results.length === 0) {

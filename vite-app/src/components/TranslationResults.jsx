@@ -1,12 +1,31 @@
-import React from 'react';
-
-function TranslationResults({ input, detectedLang, translated }) {
+function TranslationResults({ input, detectedLang, translated, supportedLanguages = ['te', 'ta'] }) {
   const getDetectedLanguageText = () => {
     if (!input.trim()) return 'No text entered';
     if (detectedLang === null) return 'Unsupported language';
-    if (detectedLang === 'te') return 'Telugu (తెలుగు)';
-    if (detectedLang === 'ta') return 'Tamil (தமிழ்)';
-    return 'Detecting...';
+    
+    // Check if detected language is supported
+    if (supportedLanguages.includes(detectedLang)) {
+      const languageNames = {
+        'te': 'Telugu (తెలుగు)',
+        'ta': 'Tamil (தமிழ்)',
+        'en': 'English',
+        'hi': 'Hindi (हिन्दी)',
+        'es': 'Spanish (Español)',
+        'fr': 'French (Français)',
+        'de': 'German (Deutsch)',
+        'it': 'Italian (Italiano)',
+        'pt': 'Portuguese (Português)',
+        'ru': 'Russian (Русский)',
+        'ja': 'Japanese (日本語)',
+        'ko': 'Korean (한국어)',
+        'zh': 'Chinese (中文)',
+        'ar': 'Arabic (العربية)'
+      };
+      
+      return languageNames[detectedLang] || `${detectedLang.toUpperCase()}`;
+    }
+    
+    return 'Unsupported language';
   };
 
   const getHelpText = () => {

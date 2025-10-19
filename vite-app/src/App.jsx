@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import './App.css';
+import { useState, useEffect, useMemo } from 'react';
 import useBrowserLanguageDetection from '../../hooks/lang-detection/useBrowserLanguageDetection';
 import useBrowserTranslator from '../../hooks/lang-translate/useBrowserTranslator';
 import AIStatusBar from './AIStatusBar';
@@ -10,9 +9,26 @@ import useLanguageDetectionLogic from './hooks/useLanguageDetectionLogicUtil';
 
 function App() {
   const [translated, setTranslated] = useState('');
-  const [selectedLang] = useState('te'); // Default to Telugu
   const [langDetectionStatus, setLangDetectionStatus] = useState('checking');
   const [translationStatus, setTranslationStatus] = useState('checking');
+  
+  // Configuration constants
+  const selectedLang = 'te'; // Default to Telugu
+  const supportedLanguages = useMemo(() => ['te', 'ta'], []); // Supported source languages - memoized to prevent recreation
+
+  // Memoize config objects to prevent infinite loops
+  const languageDetectionConfig = useMemo(() => ({
+    expectedLanguages: supportedLanguages
+  }), [supportedLanguages]);
+
+  const translatorConfig = useMemo(() => ({
+    sourceLanguage: selectedLang,
+    targetLanguage: 'en',
+    bootstrapLanguages: [
+      { sourceLanguage: 'te', targetLanguage: 'en' },
+      { sourceLanguage: 'ta', targetLanguage: 'en' },
+    ]
+  }), [selectedLang]);
 
   // Status bar states
   const [browserSupported, setBrowserSupported] = useState(false);
@@ -20,19 +36,12 @@ function App() {
   const [bootstrapProgress, setBootstrapProgress] = useState(0);
 
   // Use custom hook for language detection logic
-  const { input, detectedLang, handleInputChange, isTranslateDisabled } = useLanguageDetectionLogic();
+  const { input, detectedLang, handleInputChange, isTranslateDisabled } = useLanguageDetectionLogic(languageDetectionConfig);
 
-  const { availabilityStatus: langDetectionStatusFromHook, destroy: destroyLanguageDetector } = useBrowserLanguageDetection();
+  const { availabilityStatus: langDetectionStatusFromHook, destroy: destroyLanguageDetector } = useBrowserLanguageDetection(supportedLanguages);
 
   // Provide single source and target language as strings in config
-  const { translate, getAvailabilityStatus, destroy: destroyTranslator } = useBrowserTranslator({
-    sourceLanguage: selectedLang, // use selected language
-    targetLanguage: 'en',                    // translate to English by default
-    bootstrapLanguages: [
-      { sourceLanguage: 'te', targetLanguage: 'en' },
-      { sourceLanguage: 'ta', targetLanguage: 'en' }
-    ]
-  });
+  const { translate, getAvailabilityStatus, destroy: destroyTranslator } = useBrowserTranslator(translatorConfig);
 
   // Update language detection status from hook
   useEffect(() => {
@@ -43,7 +52,7 @@ function App() {
   useEffect(() => {
     const status = getAvailabilityStatus(selectedLang, 'en');
     setTranslationStatus(status);
-  }, [selectedLang, getAvailabilityStatus]);
+  }, [selectedLang]); // Remove getAvailabilityStatus from dependencies
 
   // Browser feature detection and bootstrap logic
   useEffect(() => {
@@ -111,6 +120,7 @@ function App() {
               onTranslate={handleTranslate}
               detectedLang={detectedLang}
               isDisabled={isTranslateDisabled}
+              supportedLanguages={supportedLanguages}
             />
           </div>
 
@@ -120,6 +130,7 @@ function App() {
               input={input}
               detectedLang={detectedLang}
               translated={translated}
+              supportedLanguages={supportedLanguages}
             />
           </div>
         </div>

@@ -1,11 +1,14 @@
 import { useState, useCallback } from 'react';
 import useBrowserLanguageDetection from '../../../hooks/lang-detection/useBrowserLanguageDetection';
 
-function useLanguageDetectionLogic() {
+function useLanguageDetectionLogic(config = {}) {
   const [input, setInput] = useState('');
   const [detectedLang, setDetectedLang] = useState(null);
   
-  const { detectLanguage } = useBrowserLanguageDetection();
+  // Extract supported languages from config, default to ['te', 'ta'] for backward compatibility
+  const supportedLanguages = config.expectedLanguages || ['te', 'ta'];
+  
+  const { detectLanguage } = useBrowserLanguageDetection(config);
 
   const handleInputChange = useCallback(async (e) => {
     const text = e.target.value;
@@ -25,8 +28,8 @@ function useLanguageDetectionLogic() {
   }, [detectLanguage]);
 
   const isTranslateDisabled = useCallback(() => {
-    return !input.trim() || detectedLang === null || (detectedLang && detectedLang !== 'te' && detectedLang !== 'ta');
-  }, [input, detectedLang]);
+    return !input.trim() || detectedLang === null || (detectedLang && !supportedLanguages.includes(detectedLang));
+  }, [input, detectedLang, supportedLanguages]);
 
   return {
     input,
