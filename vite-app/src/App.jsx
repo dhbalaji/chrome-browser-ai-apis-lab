@@ -2,130 +2,26 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import useBrowserLanguageDetection from '../../hooks/lang-detection/useBrowserLanguageDetection';
 import useBrowserTranslator from '../../hooks/lang-translate/useBrowserTranslator';
-
-// StatusBar Component
-function StatusBar({ 
-  browserSupported, 
-  chromeVersion, 
-  bootstrapStatus, 
-  bootstrapProgress 
-}) {
-  const getStatusBarStyle = () => {
-    if (!browserSupported) {
-      return {
-        backgroundColor: '#fef2f2',
-        borderTop: '2px solid #fca5a5',
-        color: '#dc2626'
-      };
-    }
-    
-    if (bootstrapStatus === 'checking') {
-      return {
-        backgroundColor: '#f0f9ff',
-        borderTop: '2px solid #7dd3fc',
-        color: '#0369a1'
-      };
-    }
-    
-    if (bootstrapStatus === 'downloading') {
-      return {
-        backgroundColor: '#fefce8',
-        borderTop: '2px solid #fde047',
-        color: '#a16207'
-      };
-    }
-    
-    if (bootstrapStatus === 'available') {
-      return {
-        backgroundColor: '#f0fdf4',
-        borderTop: '2px solid #86efac',
-        color: '#166534'
-      };
-    }
-    
-    return {
-      backgroundColor: '#f8fafc',
-      borderTop: '2px solid #e2e8f0',
-      color: '#475569'
-    };
-  };
-
-  const getStatusMessage = () => {
-    if (!browserSupported) {
-      return `Your browser doesn't support AI features. Please use Chrome 138 or above for the best experience.`;
-    }
-    
-    if (bootstrapStatus === 'checking') {
-      return 'Browser AI features detected. Initializing language services...';
-    }
-    
-    if (bootstrapStatus === 'downloading') {
-      return `Downloading language models... ${bootstrapProgress}% complete`;
-    }
-    
-    if (bootstrapStatus === 'available') {
-      return 'Language services ready! You can now translate text seamlessly.';
-    }
-    
-    return 'Preparing language services...';
-  };
-
-  return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      padding: '12px 20px',
-      fontSize: '14px',
-      fontWeight: '500',
-      zIndex: 1000,
-      ...getStatusBarStyle()
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span>{getStatusMessage()}</span>
-        {bootstrapStatus === 'downloading' && (
-          <div style={{
-            marginLeft: '12px',
-            width: '100px',
-            height: '4px',
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '2px',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              width: `${bootstrapProgress}%`,
-              height: '100%',
-              backgroundColor: '#a16207',
-              transition: 'width 0.3s ease'
-            }}></div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+import AIStatusBar from './AIStatusBar';
 
 function App() {
   const [input, setInput] = useState('');
   const [translated, setTranslated] = useState('');
   const [showOutput, setShowOutput] = useState(false);
   const [accepted, setAccepted] = useState(false);
-  const [detectedLang, setDetectedLang] = useState('');
   const [selectedLang, setSelectedLang] = useState('te'); // Default to Telugu
   const [langDetectionStatus, setLangDetectionStatus] = useState('checking');
   const [translationStatus, setTranslationStatus] = useState('checking');
 
   // Status bar states
   const [browserSupported, setBrowserSupported] = useState(false);
-  const [chromeVersion, setChromeVersion] = useState(null);
   const [bootstrapStatus, setBootstrapStatus] = useState('checking');
   const [bootstrapProgress, setBootstrapProgress] = useState(0);
 
-  const { detectLanguage, availabilityStatus: langDetectionStatusFromHook } = useBrowserLanguageDetection(); // No language array needed
+  const { availabilityStatus: langDetectionStatusFromHook } = useBrowserLanguageDetection(); // No language array needed
 
   // Provide single source and target language as strings in config
-  const { translate, getAvailabilityStatus, languagePairs } = useBrowserTranslator({
+  const { translate, getAvailabilityStatus } = useBrowserTranslator({
     sourceLanguage: selectedLang, // use selected language
     targetLanguage: 'en',                    // translate to English by default
     bootstrapLanguages: [
@@ -151,8 +47,6 @@ function App() {
     const userAgent = navigator.userAgent;
     const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
     const chromeVersion = chromeMatch ? parseInt(chromeMatch[1]) : 0;
-    
-    setChromeVersion(chromeVersion);
     
     const hasAIFeatures = (
       typeof window !== 'undefined' &&
@@ -207,9 +101,6 @@ function App() {
   };
 
   const handleTranslate = async () => {
-    // Use selected language instead of detecting
-    setDetectedLang(selectedLang);
-
     // Translate input text to English by default, no second argument needed
     const translatedText = await translate(input); 
     setTranslated(translatedText ?? '');
@@ -330,9 +221,8 @@ function App() {
       )}
       
       {/* Status Bar */}
-      <StatusBar 
+      <AIStatusBar 
         browserSupported={browserSupported}
-        chromeVersion={chromeVersion}
         bootstrapStatus={bootstrapStatus}
         bootstrapProgress={bootstrapProgress}
       />
