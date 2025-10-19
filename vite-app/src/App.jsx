@@ -73,7 +73,7 @@ function App() {
             clearInterval(progressInterval);
             setBootstrapStatus('available');
           }
-          setBootstrapProgress(Math.min(progress, 100));
+          setBootstrapProgress(parseFloat(Math.min(progress, 100)).toFixed(2));
         }, 200);
       }, 5000);
     }
@@ -142,29 +142,10 @@ function App() {
 
       {!accepted && (
         <>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: colors.default.text }}>
-              Your input language is:
-            </label>
-            <select
-              value={selectedLang}
-              onChange={(e) => setSelectedLang(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: `1px solid ${colors.default.border}`,
-                borderRadius: '6px',
-                fontSize: '14px',
-                backgroundColor: 'white'
-              }}
-            >
-              <option value="te">Telugu</option>
-              <option value="ta">Tamil</option>
-            </select>
-          </div>
+          
           <textarea
             rows={4}
-            style={{ width: '100%' }}
+            style={{ width: '100%', border: "1px solid white" }}
             placeholder="Enter text to translate..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
