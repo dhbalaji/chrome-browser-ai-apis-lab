@@ -8,4 +8,4 @@ export type LanguageDetectorType = {
   destroy?(): void;
 };
 
-export type AvailabilityStatus = "available" | "downloadable" | "downloading" | "unavailable";
+export type AvailabilityStatus = "available" | "downloadable" | "downloading" | "unavailable" | "checking";

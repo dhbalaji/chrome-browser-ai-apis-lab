@@ -47,3 +47,5 @@ An experimental playground for Chrome’s built-in AI APIs — language detectio
 ### References
 
 - https://chrome.dev/web-ai-demos/
+- https://github.com/GoogleChromeLabs/web-ai-demos
+- https://github.com/GoogleChromeLabs/web-ai-demos/tree/main/toxic-review-warning

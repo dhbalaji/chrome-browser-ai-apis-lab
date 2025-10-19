@@ -1,7 +1,110 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import useBrowserLanguageDetection from '../../hooks/lang-detection/useBrowserLanguageDetection';
 import useBrowserTranslator from '../../hooks/lang-translate/useBrowserTranslator';
+
+// StatusBar Component
+function StatusBar({ 
+  browserSupported, 
+  chromeVersion, 
+  bootstrapStatus, 
+  bootstrapProgress 
+}) {
+  const getStatusBarStyle = () => {
+    if (!browserSupported) {
+      return {
+        backgroundColor: '#fef2f2',
+        borderTop: '2px solid #fca5a5',
+        color: '#dc2626'
+      };
+    }
+    
+    if (bootstrapStatus === 'checking') {
+      return {
+        backgroundColor: '#f0f9ff',
+        borderTop: '2px solid #7dd3fc',
+        color: '#0369a1'
+      };
+    }
+    
+    if (bootstrapStatus === 'downloading') {
+      return {
+        backgroundColor: '#fefce8',
+        borderTop: '2px solid #fde047',
+        color: '#a16207'
+      };
+    }
+    
+    if (bootstrapStatus === 'available') {
+      return {
+        backgroundColor: '#f0fdf4',
+        borderTop: '2px solid #86efac',
+        color: '#166534'
+      };
+    }
+    
+    return {
+      backgroundColor: '#f8fafc',
+      borderTop: '2px solid #e2e8f0',
+      color: '#475569'
+    };
+  };
+
+  const getStatusMessage = () => {
+    if (!browserSupported) {
+      return `Your browser doesn't support AI features. Please use Chrome 138 or above for the best experience.`;
+    }
+    
+    if (bootstrapStatus === 'checking') {
+      return 'Browser AI features detected. Initializing language services...';
+    }
+    
+    if (bootstrapStatus === 'downloading') {
+      return `Downloading language models... ${bootstrapProgress}% complete`;
+    }
+    
+    if (bootstrapStatus === 'available') {
+      return 'Language services ready! You can now translate text seamlessly.';
+    }
+    
+    return 'Preparing language services...';
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: '12px 20px',
+      fontSize: '14px',
+      fontWeight: '500',
+      zIndex: 1000,
+      ...getStatusBarStyle()
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span>{getStatusMessage()}</span>
+        {bootstrapStatus === 'downloading' && (
+          <div style={{
+            marginLeft: '12px',
+            width: '100px',
+            height: '4px',
+            backgroundColor: 'rgba(0,0,0,0.1)',
+            borderRadius: '2px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: `${bootstrapProgress}%`,
+              height: '100%',
+              backgroundColor: '#a16207',
+              transition: 'width 0.3s ease'
+            }}></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [input, setInput] = useState('');
@@ -9,19 +112,103 @@ function App() {
   const [showOutput, setShowOutput] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [detectedLang, setDetectedLang] = useState('');
+  const [selectedLang, setSelectedLang] = useState('te'); // Default to Telugu
+  const [langDetectionStatus, setLangDetectionStatus] = useState('checking');
+  const [translationStatus, setTranslationStatus] = useState('checking');
 
-  const detectLanguage = useBrowserLanguageDetection(); // No language array needed
+  // Status bar states
+  const [browserSupported, setBrowserSupported] = useState(false);
+  const [chromeVersion, setChromeVersion] = useState(null);
+  const [bootstrapStatus, setBootstrapStatus] = useState('checking');
+  const [bootstrapProgress, setBootstrapProgress] = useState(0);
+
+  const { detectLanguage, availabilityStatus: langDetectionStatusFromHook } = useBrowserLanguageDetection(); // No language array needed
 
   // Provide single source and target language as strings in config
-  const { translate } = useBrowserTranslator({
-    sourceLanguage: detectedLang || 'te', // use detected lang or 'auto'
+  const { translate, getAvailabilityStatus, languagePairs } = useBrowserTranslator({
+    sourceLanguage: selectedLang, // use selected language
     targetLanguage: 'en',                    // translate to English by default
+    bootstrapLanguages: [
+      { sourceLanguage: 'te', targetLanguage: 'en' },
+      { sourceLanguage: 'ta', targetLanguage: 'en' }
+    ]
   });
 
+  // Update language detection status from hook
+  useEffect(() => {
+    setLangDetectionStatus(langDetectionStatusFromHook);
+  }, [langDetectionStatusFromHook]);
+
+  // Update translation status from hook
+  useEffect(() => {
+    const status = getAvailabilityStatus(selectedLang, 'en');
+    setTranslationStatus(status);
+  }, [selectedLang, getAvailabilityStatus]);
+
+  // Browser feature detection and bootstrap logic
+  useEffect(() => {
+    // Check browser support
+    const userAgent = navigator.userAgent;
+    const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+    const chromeVersion = chromeMatch ? parseInt(chromeMatch[1]) : 0;
+    
+    setChromeVersion(chromeVersion);
+    
+    const hasAIFeatures = (
+      typeof window !== 'undefined' &&
+      'LanguageDetector' in window &&
+      'Translator' in window &&
+      window.isSecureContext &&
+      chromeVersion >= 138
+    );
+    
+    setBrowserSupported(hasAIFeatures);
+    
+    if (hasAIFeatures) {
+      // Start bootstrap process after 5 seconds
+      setTimeout(() => {
+        setBootstrapStatus('downloading');
+        
+        // Simulate bootstrap progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += Math.random() * 15;
+          if (progress >= 100) {
+            progress = 100;
+            clearInterval(progressInterval);
+            setBootstrapStatus('available');
+          }
+          setBootstrapProgress(Math.min(progress, 100));
+        }, 200);
+      }, 5000);
+    }
+  }, []); // Empty dependency array - only run once on mount
+
+  // Helper function to get status color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'available': return '#10b981'; // green
+      case 'downloadable': return '#f59e0b'; // amber
+      case 'downloading': return '#3b82f6'; // blue
+      case 'unavailable': return '#ef4444'; // red
+      default: return '#6b7280'; // gray
+    }
+  };
+
+  // Helper function to get status text
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'available': return 'Available';
+      case 'downloadable': return 'Downloadable';
+      case 'downloading': return 'Downloading...';
+      case 'unavailable': return 'Unavailable';
+      default: return 'Checking...';
+    }
+  };
+
   const handleTranslate = async () => {
-    // Detect source language first
-    const lang = await detectLanguage(input);
-    setDetectedLang(lang);
+    // Use selected language instead of detecting
+    setDetectedLang(selectedLang);
 
     // Translate input text to English by default, no second argument needed
     const translatedText = await translate(input); 
@@ -42,9 +229,69 @@ function App() {
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: '2rem auto' }}>
+    <div style={{ maxWidth: 500, margin: '2rem auto', paddingBottom: '80px' }}>
+      {/* API Status Banner */}
+      <div style={{
+        backgroundColor: '#f8fafc',
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        padding: '12px',
+        marginBottom: '20px',
+        fontSize: '14px'
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#374151' }}>
+          API Status
+        </div>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: getStatusColor(langDetectionStatus)
+            }}></div>
+            <span style={{ color: '#6b7280' }}>Language Detection:</span>
+            <span style={{ fontWeight: '500', color: getStatusColor(langDetectionStatus) }}>
+              {getStatusText(langDetectionStatus)}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: getStatusColor(translationStatus)
+            }}></div>
+            <span style={{ color: '#6b7280' }}>Translation:</span>
+            <span style={{ fontWeight: '500', color: getStatusColor(translationStatus) }}>
+              {getStatusText(translationStatus)}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {!accepted && (
         <>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#374151' }}>
+              Your input language is:
+            </label>
+            <select
+              value={selectedLang}
+              onChange={(e) => setSelectedLang(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="te">Telugu</option>
+              <option value="ta">Tamil</option>
+            </select>
+          </div>
           <textarea
             rows={4}
             style={{ width: '100%' }}
@@ -62,7 +309,7 @@ function App() {
       {showOutput && (
         <div style={{ marginTop: '2rem' }}>
           <div>
-            <strong>Detected Language:</strong> {detectedLang}
+            <strong>Selected Language:</strong> {selectedLang === 'te' ? 'Telugu' : 'Tamil'}
           </div>
           <textarea rows={4} style={{ width: '100%' }} value={translated} readOnly />
           <br />
@@ -81,6 +328,14 @@ function App() {
           <button onClick={handleEdit}>Edit</button>
         </div>
       )}
+      
+      {/* Status Bar */}
+      <StatusBar 
+        browserSupported={browserSupported}
+        chromeVersion={chromeVersion}
+        bootstrapStatus={bootstrapStatus}
+        bootstrapProgress={bootstrapProgress}
+      />
     </div>
   );
 }

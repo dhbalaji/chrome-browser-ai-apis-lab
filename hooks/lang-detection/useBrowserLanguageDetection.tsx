@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { AvailabilityStatus, LanguageDetectorType } from "./types";
 
 // Add global type augmentation for LanguageDetector
@@ -17,19 +17,25 @@ declare global {
  * the Chrome Language Detector API. Works safely in SSR environments like Next.js.
  *
  * This hook handles API availability, model download state, and cleanup
- * internally, exposing a single async detection function.
+ * internally, exposing a detection function and availability status.
  *
  * @param expectedLanguages Optional array of BCP-47 language codes
  *   to optimize language detection. For example: ["en", "hi", "te"].
  *   If omitted, detection works without hints.
  *
- * @returns An async function which accepts input text and returns the top detected
- *   language code string, or null if detection fails or API is unavailable.
+ * @returns An object containing:
+ *   - detectLanguage: An async function which accepts input text and returns the top detected
+ *     language code string, or null if detection fails or API is unavailable.
+ *   - availabilityStatus: The current availability status of the Language Detector API.
  */
 export function useBrowserLanguageDetection(
   expectedLanguages?: string[]
-): (inputText: string) => Promise<string | null> {
+): {
+  detectLanguage: (inputText: string) => Promise<string | null>;
+  availabilityStatus: AvailabilityStatus;
+} {
   const languageDetectorInstanceRef = useRef<LanguageDetectorType | null>(null);
+  const [availabilityStatus, setAvailabilityStatus] = useState<AvailabilityStatus>("checking");
 
   /**
    * Checks if the code runs client side and if the Language Detector API is supported.
@@ -87,10 +93,17 @@ export function useBrowserLanguageDetection(
     async function initializeLanguageDetector() {
       if (!canUseLanguageDetector()) {
         // Avoid running on server or unsupported browsers
+        if (componentIsMounted) {
+          setAvailabilityStatus("unavailable");
+        }
         return;
       }
 
       const availability = await getDetectorAvailability();
+      
+      if (componentIsMounted) {
+        setAvailabilityStatus(availability);
+      }
 
       if (availability === "available") {
         const detector = await createLanguageDetector(null, expectedLanguages);
@@ -133,7 +146,7 @@ export function useBrowserLanguageDetection(
     }
   }, []);
 
-  return detectLanguage;
+  return { detectLanguage, availabilityStatus };
 }
 
 export default useBrowserLanguageDetection;
