@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from './colors';
 
 // StatusBar Component
 function AIStatusBar({ 
@@ -9,40 +10,40 @@ function AIStatusBar({
   const getStatusBarStyle = () => {
     if (!browserSupported) {
       return {
-        backgroundColor: '#fef2f2',
-        borderTop: '2px solid #fca5a5',
-        color: '#dc2626'
+        backgroundColor: colors.error.background,
+        borderTop: `2px solid ${colors.error.border}`,
+        color: colors.error.text
       };
     }
     
     if (bootstrapStatus === 'checking') {
       return {
-        backgroundColor: '#f0f9ff',
-        borderTop: '2px solid #7dd3fc',
-        color: '#0369a1'
+        backgroundColor: colors.info.background,
+        borderTop: `2px solid ${colors.info.border}`,
+        color: colors.info.text
       };
     }
     
     if (bootstrapStatus === 'downloading') {
       return {
-        backgroundColor: '#fefce8',
-        borderTop: '2px solid #fde047',
-        color: '#a16207'
+        backgroundColor: colors.warning.background,
+        borderTop: `2px solid ${colors.warning.border}`,
+        color: colors.warning.text
       };
     }
     
     if (bootstrapStatus === 'available') {
       return {
-        backgroundColor: '#f0fdf4',
-        borderTop: '2px solid #86efac',
-        color: '#166534'
+        backgroundColor: colors.success.background,
+        borderTop: `2px solid ${colors.success.border}`,
+        color: colors.success.text
       };
     }
     
     return {
-      backgroundColor: '#f8fafc',
-      borderTop: '2px solid #e2e8f0',
-      color: '#475569'
+      backgroundColor: colors.default.background,
+      borderTop: `2px solid ${colors.default.border}`,
+      color: colors.default.text
     };
   };
 
@@ -85,14 +86,14 @@ function AIStatusBar({
             marginLeft: '12px',
             width: '100px',
             height: '4px',
-            backgroundColor: 'rgba(0,0,0,0.1)',
+            backgroundColor: colors.progress.background,
             borderRadius: '2px',
             overflow: 'hidden'
           }}>
             <div style={{
               width: `${bootstrapProgress}%`,
               height: '100%',
-              backgroundColor: '#a16207',
+              backgroundColor: colors.progress.bar,
               transition: 'width 0.3s ease'
             }}></div>
           </div>

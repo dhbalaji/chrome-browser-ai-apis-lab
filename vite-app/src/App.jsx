@@ -3,6 +3,7 @@ import './App.css';
 import useBrowserLanguageDetection from '../../hooks/lang-detection/useBrowserLanguageDetection';
 import useBrowserTranslator from '../../hooks/lang-translate/useBrowserTranslator';
 import AIStatusBar from './AIStatusBar';
+import { colors } from './colors';
 
 function App() {
   const [input, setInput] = useState('');
@@ -78,28 +79,6 @@ function App() {
     }
   }, []); // Empty dependency array - only run once on mount
 
-  // Helper function to get status color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'available': return '#10b981'; // green
-      case 'downloadable': return '#f59e0b'; // amber
-      case 'downloading': return '#3b82f6'; // blue
-      case 'unavailable': return '#ef4444'; // red
-      default: return '#6b7280'; // gray
-    }
-  };
-
-  // Helper function to get status text
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'available': return 'Available';
-      case 'downloadable': return 'Downloadable';
-      case 'downloading': return 'Downloading...';
-      case 'unavailable': return 'Unavailable';
-      default: return 'Checking...';
-    }
-  };
-
   const handleTranslate = async () => {
     // Translate input text to English by default, no second argument needed
     const translatedText = await translate(input); 
@@ -123,14 +102,14 @@ function App() {
     <div style={{ maxWidth: 500, margin: '2rem auto', paddingBottom: '80px' }}>
       {/* API Status Banner */}
       <div style={{
-        backgroundColor: '#f8fafc',
-        border: '1px solid #e2e8f0',
+        backgroundColor: colors.default.background,
+        border: `1px solid ${colors.default.border}`,
         borderRadius: '8px',
         padding: '12px',
         marginBottom: '20px',
         fontSize: '14px'
       }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#374151' }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: colors.default.text }}>
           API Status
         </div>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -139,11 +118,11 @@ function App() {
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: getStatusColor(langDetectionStatus)
+              backgroundColor: colors[langDetectionStatus]?.background || colors.default.background
             }}></div>
-            <span style={{ color: '#6b7280' }}>Language Detection:</span>
-            <span style={{ fontWeight: '500', color: getStatusColor(langDetectionStatus) }}>
-              {getStatusText(langDetectionStatus)}
+            <span style={{ color: colors.default.text }}>Language Detection:</span>
+            <span style={{ fontWeight: '500', color: colors[langDetectionStatus]?.text || colors.default.text }}>
+              {langDetectionStatus}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -151,11 +130,11 @@ function App() {
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: getStatusColor(translationStatus)
+              backgroundColor: colors[translationStatus]?.background || colors.default.background
             }}></div>
-            <span style={{ color: '#6b7280' }}>Translation:</span>
-            <span style={{ fontWeight: '500', color: getStatusColor(translationStatus) }}>
-              {getStatusText(translationStatus)}
+            <span style={{ color: colors.default.text }}>Translation:</span>
+            <span style={{ fontWeight: '500', color: colors[translationStatus]?.text || colors.default.text }}>
+              {translationStatus}
             </span>
           </div>
         </div>
@@ -164,7 +143,7 @@ function App() {
       {!accepted && (
         <>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#374151' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: colors.default.text }}>
               Your input language is:
             </label>
             <select
@@ -173,7 +152,7 @@ function App() {
               style={{
                 width: '100%',
                 padding: '8px 12px',
-                border: '1px solid #d1d5db',
+                border: `1px solid ${colors.default.border}`,
                 borderRadius: '6px',
                 fontSize: '14px',
                 backgroundColor: 'white'
@@ -231,3 +210,4 @@ function App() {
 }
 
 export default App;
+
