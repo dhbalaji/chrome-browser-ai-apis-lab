@@ -44,3 +44,6 @@ An experimental playground for Chrome’s built-in AI APIs — language detectio
 5. Bring curiosity, not a binge-watch mindset.
   
 
+### References
+
+- https://chrome.dev/web-ai-demos/
