@@ -56,7 +56,7 @@ export function useBrowserTranslator(
 
     for (const pair of pairs) {
       const status = await getTranslatorAvailability(pair.sourceLanguage, pair.targetLanguage);
-      
+
       let translator: TranslatorType | undefined;
       if (status === "available" || status === "downloadable" || status === "downloading") {
         try {
@@ -77,7 +77,7 @@ export function useBrowserTranslator(
   }, []);
 
   const getAvailabilityStatus = useCallback((sourceLang: string, targetLang: string): AvailabilityStatus => {
-    const pair = languagePairs.find(p => 
+    const pair = languagePairs.find(p =>
       p.pair.sourceLanguage === sourceLang && p.pair.targetLanguage === targetLang
     );
     return pair?.status || "checking";
@@ -124,7 +124,7 @@ export function useBrowserTranslator(
       targetLanguage = defaultTargetLanguage
     ): Promise<string | null> => {
       // Try to find a translator for the specific language pair
-      const pair = languagePairs.find(p => 
+      const pair = languagePairs.find(p =>
         p.pair.sourceLanguage === sourceLanguage && p.pair.targetLanguage === targetLanguage
       );
 
@@ -134,7 +134,7 @@ export function useBrowserTranslator(
         console.warn("Translator instance is not initialized.");
         return null;
       }
-      
+
       try {
         const result = await translatorToUse.translate(text, options, targetLanguage);
         return result.toString() ?? null;
@@ -145,11 +145,30 @@ export function useBrowserTranslator(
     [sourceLanguage, defaultTargetLanguage, languagePairs]
   );
 
+  const destroy = useCallback(() => {
+    // Destroy the main translator instance
+    if (translatorInstanceRef.current?.destroy) {
+      translatorInstanceRef.current.destroy();
+      translatorInstanceRef.current = null;
+    }
+
+    // Destroy all language pair translators
+    languagePairs.forEach(pair => {
+      if (pair.translator?.destroy) {
+        pair.translator.destroy();
+      }
+    });
+
+    // Clear the language pairs state
+    setLanguagePairs([]);
+  }, [languagePairs]);
+
   return {
     translate,
     languagePairs,
     getAvailabilityStatus,
-    bootstrapLanguagePairs
+    bootstrapLanguagePairs,
+    destroy
   };
 }
 

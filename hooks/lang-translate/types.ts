@@ -36,6 +36,7 @@ export type TranslatorReturnType = {
   languagePairs: LanguagePairStatus[];
   getAvailabilityStatus: (sourceLanguage: string, targetLanguage: string) => AvailabilityStatus;
   bootstrapLanguagePairs: (pairs: LanguagePair[]) => Promise<void>;
+  destroy: () => void;
 }
 
 export type AvailabilityStatus = "available" | "downloadable" | "downloading" | "unavailable" | "checking";

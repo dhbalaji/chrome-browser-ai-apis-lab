@@ -1,152 +1,237 @@
 import { useEffect, useCallback, useRef, useState } from "react";
-import { AvailabilityStatus, LanguageDetectorType } from "./types";
+import { AvailabilityStatus, LanguageDetectorType, LanguageDetectorReturnType } from "./types";
 
-// Add global type augmentation for LanguageDetector
+// Global type augmentation for Chrome LanguageDetector API
 declare global {
   interface Window {
     LanguageDetector: {
       availability(): Promise<AvailabilityStatus>;
-      create(config: any): Promise<LanguageDetectorType>;
+      create(config: LanguageDetectorConfig): Promise<LanguageDetectorType>;
     };
     isSecureContext: boolean;
   }
 }
 
+// Configuration type for LanguageDetector creation
+interface LanguageDetectorConfig {
+  monitor?: (monitor: EventTarget) => void;
+  expectedInputLanguages?: string[];
+}
+
 /**
- * Custom React hook for detecting the language of a text input using
- * the Chrome Language Detector API. Works safely in SSR environments like Next.js.
+ * Custom React hook for detecting the language of text input using Chrome's Language Detector API.
+ * 
+ * Features:
+ * - Safe SSR compatibility (Next.js, etc.)
+ * - Automatic API availability checking
+ * - Model download progress handling
+ * - Resource cleanup on unmount
+ * - Confidence-based language detection with ambiguity handling
  *
- * This hook handles API availability, model download state, and cleanup
- * internally, exposing a detection function and availability status.
- *
- * @param expectedLanguages Optional array of BCP-47 language codes
- *   to optimize language detection. For example: ["en", "hi", "te"].
- *   If omitted, detection works without hints.
- *
- * @returns An object containing:
- *   - detectLanguage: An async function which accepts input text and returns the top detected
- *     language code string, or null if detection fails or API is unavailable.
- *   - availabilityStatus: The current availability status of the Language Detector API.
+ * @param expectedLanguages - Optional BCP-47 language codes to optimize detection
+ * @returns Object with detection function, availability status, and cleanup function
  */
 export function useBrowserLanguageDetection(
   expectedLanguages?: string[]
-): {
-  detectLanguage: (inputText: string) => Promise<string | null>;
-  availabilityStatus: AvailabilityStatus;
-} {
-  const languageDetectorInstanceRef = useRef<LanguageDetectorType | null>(null);
+): LanguageDetectorReturnType {
+  // Instance reference for the LanguageDetector
+  const detectorRef = useRef<LanguageDetectorType | null>(null);
+
+  // Current availability status of the API
   const [availabilityStatus, setAvailabilityStatus] = useState<AvailabilityStatus>("checking");
 
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
   /**
-   * Checks if the code runs client side and if the Language Detector API is supported.
+   * Checks if the Language Detector API is available in the current environment.
+   * Requires: client-side execution, API presence, and secure context (HTTPS).
    */
-  function canUseLanguageDetector(): boolean {
+  const isAPIAvailable = useCallback((): boolean => {
     return (
       typeof window !== "undefined" &&
       "LanguageDetector" in window &&
       window.isSecureContext
     );
-  }
+  }, []);
 
   /**
-   * Safely retrieves the availability status of the language detector model.
-   * Possible return values: "available", "downloadable", "downloading", "unavailable".
+   * Safely checks the availability status of the Language Detector API.
+   * Returns "unavailable" if API is not supported or if an error occurs.
    */
-  async function getDetectorAvailability(): Promise<AvailabilityStatus> {
-    if (!canUseLanguageDetector()) {
+  const checkAPIAvailability = useCallback(async (): Promise<AvailabilityStatus> => {
+    if (!isAPIAvailable()) {
       return "unavailable";
     }
+
     try {
-      return (await window.LanguageDetector.availability()) as AvailabilityStatus;
-    } catch {
+      return await window.LanguageDetector.availability();
+    } catch (error) {
+      console.warn("Failed to check Language Detector availability:", error);
       return "unavailable";
     }
-  }
+  }, [isAPIAvailable]);
 
   /**
-   * Creates a new LanguageDetector instance.
-   * Attaches an optional download progress event listener.
-   *
-   * @param onDownloadProgress Optional callback for download progress.
-   * @param expectedInputLanguages Optional expected languages for optimization.
+   * Creates a new LanguageDetector instance with optional configuration.
+   * 
+   * @param onDownloadProgress - Optional callback for download progress events
+   * @param expectedLanguages - Optional language hints for better detection
+   * @returns Promise resolving to LanguageDetector instance
    */
-  async function createLanguageDetector(
-    onDownloadProgress: ((e: ProgressEvent) => void) | null,
-    expectedInputLanguages?: string[]
-  ): Promise<LanguageDetectorType> {
-    const config = onDownloadProgress
-      ? {
-          monitor(monitor: EventTarget) {
-            monitor.addEventListener("downloadprogress", (e) => onDownloadProgress(e as ProgressEvent));
-          },
-          expectedInputLanguages,
-        }
-      : {
-          expectedInputLanguages,
-        };
+  const createDetectorInstance = useCallback(async (
+    onDownloadProgress?: (event: ProgressEvent) => void,
+    expectedLanguages?: string[]
+  ): Promise<LanguageDetectorType> => {
+    const config: LanguageDetectorConfig = {
+      expectedInputLanguages: expectedLanguages,
+    };
+
+    // Add download progress monitoring if callback provided
+    if (onDownloadProgress) {
+      config.monitor = (monitor: EventTarget) => {
+        monitor.addEventListener("downloadprogress", (e) =>
+          onDownloadProgress(e as ProgressEvent)
+        );
+      };
+    }
+
     return await window.LanguageDetector.create(config);
-  }
+  }, []);
+
+  // ============================================================================
+  // INITIALIZATION LOGIC
+  // ============================================================================
 
   useEffect(() => {
-    let componentIsMounted = true;
+    let isMounted = true;
 
-    async function initializeLanguageDetector() {
-      if (!canUseLanguageDetector()) {
-        // Avoid running on server or unsupported browsers
-        if (componentIsMounted) {
+    const initializeDetector = async () => {
+      // Check API availability first
+      if (!isAPIAvailable()) {
+        if (isMounted) {
           setAvailabilityStatus("unavailable");
         }
         return;
       }
 
-      const availability = await getDetectorAvailability();
-      
-      if (componentIsMounted) {
-        setAvailabilityStatus(availability);
-      }
+      try {
+        // Get current availability status
+        const status = await checkAPIAvailability();
 
-      if (availability === "available") {
-        const detector = await createLanguageDetector(null, expectedLanguages);
-        if (componentIsMounted) {
-          languageDetectorInstanceRef.current = detector;
+        if (isMounted) {
+          setAvailabilityStatus(status);
         }
-      } else if (availability === "downloadable" || availability === "downloading") {
-        const detector = await createLanguageDetector(() => {}, expectedLanguages);
-        if (componentIsMounted) {
-          languageDetectorInstanceRef.current = detector;
+
+        // Create detector instance based on availability
+        if (status === "available") {
+          const detector = await createDetectorInstance(undefined, expectedLanguages);
+          if (isMounted) {
+            detectorRef.current = detector;
+          }
+        } else if (status === "downloadable" || status === "downloading") {
+          // Create detector with download progress monitoring
+          const detector = await createDetectorInstance(() => { }, expectedLanguages);
+          if (isMounted) {
+            detectorRef.current = detector;
+          }
         }
-      } else {
-        // unavailable or unsupported
-        return;
+      } catch (error) {
+        console.error("Failed to initialize Language Detector:", error);
+        if (isMounted) {
+          setAvailabilityStatus("unavailable");
+        }
       }
-    }
-
-    initializeLanguageDetector();
-
-    return () => {
-      componentIsMounted = false;
-      if (languageDetectorInstanceRef.current?.destroy) {
-        languageDetectorInstanceRef.current.destroy();
-      }
-      languageDetectorInstanceRef.current = null;
     };
-  }, [expectedLanguages]);
+
+    initializeDetector();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (detectorRef.current?.destroy) {
+        detectorRef.current.destroy();
+      }
+      detectorRef.current = null;
+    };
+  }, [expectedLanguages, isAPIAvailable, checkAPIAvailability, createDetectorInstance]);
+
+  // ============================================================================
+  // LANGUAGE DETECTION LOGIC
+  // ============================================================================
 
   /**
-   * Detects the language of the provided input text using the initialized LanguageDetector.
-   * Returns the most likely language's BCP-47 code or null if unavailable or detection fails.
+   * Detects the language of input text using confidence-based analysis.
+   * 
+   * Algorithm:
+   * 1. Find the result with highest confidence
+   * 2. Check for ambiguous results (similar confidence levels)
+   * 3. Return null if multiple languages have similar confidence
+   * 4. Return the detected language code if confidence is clear
+   * 
+   * @param inputText - Text to analyze for language detection
+   * @returns BCP-47 language code or null if ambiguous/unavailable
    */
   const detectLanguage = useCallback(async (inputText: string): Promise<string | null> => {
     try {
-      if (!languageDetectorInstanceRef.current) return null;
-      const detectionResults = await languageDetectorInstanceRef.current.detect(inputText);
-      return detectionResults?.[0]?.detectedLanguage || null;
-    } catch {
+      // Check if detector is available
+      if (!detectorRef.current) {
+        return null;
+      }
+
+      // Get detection results from the API
+      const results = await detectorRef.current.detect(inputText);
+
+      // Handle empty or invalid results
+      if (!results || results.length === 0) {
+        return null;
+      }
+
+      // Find the result with the highest confidence
+      const bestResult = results.reduce((highest, current) =>
+        current.confidence > highest.confidence ? current : highest
+      );
+
+      // Check for ambiguous results (similar confidence levels)
+      const CONFIDENCE_THRESHOLD = 0.1;
+      const ambiguousResults = results.filter(result =>
+        Math.abs(result.confidence - bestResult.confidence) <= CONFIDENCE_THRESHOLD
+      );
+
+      // Return null if multiple languages have similar confidence
+      if (ambiguousResults.length > 1) {
+        return null;
+      }
+
+      return bestResult.detectedLanguage;
+    } catch (error) {
+      console.error("Language detection failed:", error);
       return null;
     }
   }, []);
 
-  return { detectLanguage, availabilityStatus };
+  // ============================================================================
+  // CLEANUP AND RETURN
+  // ============================================================================
+
+  /**
+   * Destroys the LanguageDetector instance and resets the availability status.
+   * This should be called when the detector is no longer needed to free up resources.
+   */
+  const destroy = useCallback(() => {
+    if (detectorRef.current?.destroy) {
+      detectorRef.current.destroy();
+      detectorRef.current = null;
+    }
+    setAvailabilityStatus("checking");
+  }, []);
+
+  return {
+    detectLanguage,
+    availabilityStatus,
+    destroy
+  };
 }
 
 export default useBrowserLanguageDetection;
