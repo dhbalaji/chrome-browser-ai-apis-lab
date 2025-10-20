@@ -95,7 +95,6 @@ function App() {
   const handleTranslate = async () => {
     // Translate input text to English, using detected language as source when available
     const translatedText = await translate(input, 'en', { sourceLanguage: detectedLang || selectedLang });
-    console.log("handle input --------",input, 'en', { sourceLanguage: detectedLang || selectedLang }, translatedText)
 
     setTranslated(translatedText ?? '');
   };
@@ -104,7 +103,6 @@ function App() {
   const destroyAllInstances = () => {
     destroyLanguageDetector();
     destroyTranslator();
-    console.log('All API instances destroyed');
   };
 
   return (

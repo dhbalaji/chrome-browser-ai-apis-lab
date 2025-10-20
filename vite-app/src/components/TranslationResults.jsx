@@ -1,6 +1,5 @@
 function TranslationResults({ input, detectedLang, translated, supportedLanguages = ['te', 'ta'] }) {
- console.log("je", input, detectedLang, translated, supportedLanguages);
- 
+
   const getDetectedLanguageText = () => {
     if (!input.trim()) return 'No text entered';
     if (detectedLang === null) return 'Unsupported language';
