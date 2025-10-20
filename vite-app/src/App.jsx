@@ -52,7 +52,7 @@ function App() {
   useEffect(() => {
     const status = getAvailabilityStatus(selectedLang, 'en');
     setTranslationStatus(status);
-  }, [selectedLang]); // Remove getAvailabilityStatus from dependencies
+  }, [selectedLang, getAvailabilityStatus]); // Remove getAvailabilityStatus from dependencies
 
   // Browser feature detection and bootstrap logic
   useEffect(() => {
@@ -93,8 +93,10 @@ function App() {
   }, []); // Empty dependency array - only run once on mount
 
   const handleTranslate = async () => {
-    // Translate input text to English by default, no second argument needed
-    const translatedText = await translate(input);
+    // Translate input text to English, using detected language as source when available
+    const translatedText = await translate(input, 'en', { sourceLanguage: detectedLang || selectedLang });
+    console.log("handle input --------",input, 'en', { sourceLanguage: detectedLang || selectedLang }, translatedText)
+
     setTranslated(translatedText ?? '');
   };
 

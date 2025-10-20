@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from "react";
-import { AvailabilityStatus, TranslatorReturnType, TranslatorType, LanguagePair, LanguagePairStatus } from "./types";
+import { AvailabilityStatus, TranslatorReturnType, TranslatorType } from "./types";
 
 declare global {
   interface Window {
@@ -15,12 +15,12 @@ export function useBrowserTranslator(
   config?: {
     sourceLanguage?: string;
     targetLanguage?: string;
-    bootstrapLanguages?: LanguagePair[];
   }
 ): TranslatorReturnType {
-  const { sourceLanguage, targetLanguage: defaultTargetLanguage = "en", bootstrapLanguages = [] } = config || {};
+  const { sourceLanguage, targetLanguage: defaultTargetLanguage = "en" } = config || {};
   const translatorInstanceRef = useRef<TranslatorType | null>(null);
-  const [languagePairs, setLanguagePairs] = useState<LanguagePairStatus[]>([]);
+  const currentSourceLangRef = useRef<string | null>(null);
+  // simplified: no languagePairs state
 
   function canUseTranslator(): boolean {
     return (
@@ -49,39 +49,11 @@ export function useBrowserTranslator(
     });
   }
 
-  const bootstrapLanguagePairs = useCallback(async (pairs: LanguagePair[]) => {
-    if (!canUseTranslator()) return;
+  const bootstrapLanguagePairs = useCallback(async (_pairs: any[]) => { return; }, []);
 
-    const pairStatuses: LanguagePairStatus[] = [];
-
-    for (const pair of pairs) {
-      const status = await getTranslatorAvailability(pair.sourceLanguage, pair.targetLanguage);
-
-      let translator: TranslatorType | undefined;
-      if (status === "available" || status === "downloadable" || status === "downloading") {
-        try {
-          translator = await createTranslator(pair.sourceLanguage, pair.targetLanguage);
-        } catch (error) {
-          console.warn(`Failed to create translator for ${pair.sourceLanguage} -> ${pair.targetLanguage}:`, error);
-        }
-      }
-
-      pairStatuses.push({
-        pair,
-        status,
-        translator
-      });
-    }
-
-    setLanguagePairs(pairStatuses);
+  const getAvailabilityStatus = useCallback((_sourceLang: string, _targetLang: string): AvailabilityStatus => {
+    return canUseTranslator() ? "available" : "unavailable";
   }, []);
-
-  const getAvailabilityStatus = useCallback((sourceLang: string, targetLang: string): AvailabilityStatus => {
-    const pair = languagePairs.find(p =>
-      p.pair.sourceLanguage === sourceLang && p.pair.targetLanguage === targetLang
-    );
-    return pair?.status || "checking";
-  }, [languagePairs]);
 
   // Initialize default translator if sourceLanguage and targetLanguage are provided
   useEffect(() => {
@@ -110,39 +82,39 @@ export function useBrowserTranslator(
     };
   }, [sourceLanguage, defaultTargetLanguage]);
 
-  // Bootstrap language pairs on mount if provided
-  useEffect(() => {
-    if (bootstrapLanguages.length > 0) {
-      bootstrapLanguagePairs(bootstrapLanguages);
-    }
-  }, [bootstrapLanguages, bootstrapLanguagePairs]);
+  // Multi-pair bootstrapping removed
 
   const translate = useCallback(
     async (
       text: string,
-      options?: { formality?: "formal" | "informal" },
-      targetLanguage = defaultTargetLanguage
+      targetLanguage = defaultTargetLanguage,
+      options?: { formality?: "formal" | "informal"; sourceLanguage?: string }
     ): Promise<string | null> => {
-      // Try to find a translator for the specific language pair
-      const pair = languagePairs.find(p =>
-        p.pair.sourceLanguage === sourceLanguage && p.pair.targetLanguage === targetLanguage
-      );
+      const effectiveSourceLanguage = options?.sourceLanguage || sourceLanguage;
+      if (!effectiveSourceLanguage) return null;
 
-      const translatorToUse = pair?.translator || translatorInstanceRef.current;
-
-      if (!translatorToUse) {
-        console.warn("Translator instance is not initialized.");
-        return null;
+      // Ensure translator is initialized for the effective source language
+      if (!translatorInstanceRef.current || currentSourceLangRef.current !== effectiveSourceLanguage) {
+        const availability = await getTranslatorAvailability(effectiveSourceLanguage, targetLanguage);
+        if (availability === "unavailable") return null;
+        try {
+          translatorInstanceRef.current = await createTranslator(effectiveSourceLanguage, targetLanguage);
+          currentSourceLangRef.current = effectiveSourceLanguage;
+        } catch {
+          return null;
+        }
       }
 
       try {
-        const result = await translatorToUse.translate(text, options, targetLanguage);
-        return result.toString() ?? null;
+        const anyTranslator: any = translatorInstanceRef.current;
+        const result = await anyTranslator.translate(text);
+        if (typeof result === 'string') return result;
+        return result?.translatedText ?? null;
       } catch {
         return null;
       }
     },
-    [sourceLanguage, defaultTargetLanguage, languagePairs]
+    [sourceLanguage, defaultTargetLanguage]
   );
 
   const destroy = useCallback(() => {
@@ -151,23 +123,11 @@ export function useBrowserTranslator(
       translatorInstanceRef.current.destroy();
       translatorInstanceRef.current = null;
     }
-
-    // Destroy all language pair translators
-    languagePairs.forEach(pair => {
-      if (pair.translator?.destroy) {
-        pair.translator.destroy();
-      }
-    });
-
-    // Clear the language pairs state
-    setLanguagePairs([]);
-  }, [languagePairs]);
+  }, []);
 
   return {
     translate,
-    languagePairs,
     getAvailabilityStatus,
-    bootstrapLanguagePairs,
     destroy
   };
 }

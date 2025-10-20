@@ -6,36 +6,23 @@ export type TranslationResult = {
 export type TranslatorType = {
   translate(
     text: string,
+    targetLanguage?: string,
     options?: {
-      sourceLanguage?: string;
       formality?: "formal" | "informal";
+      sourceLanguage?: string;
     },
-    targetLanguage?: string
   ): Promise<TranslationResult>;
 
   destroy?(): void;
 };
 
-export type LanguagePair = {
-  sourceLanguage: string;
-  targetLanguage: string;
-};
-
-export type LanguagePairStatus = {
-  pair: LanguagePair;
-  status: AvailabilityStatus;
-  translator?: TranslatorType;
-};
-
 export type TranslatorReturnType = {
   translate: (
     text: string,
-    options?: { formality?: "formal" | "informal" },
-    targetLanguage?: string
+    targetLanguage?: string,
+    options?: { formality?: "formal" | "informal"; sourceLanguage?: string },
   ) => Promise<string | null>;
-  languagePairs: LanguagePairStatus[];
   getAvailabilityStatus: (sourceLanguage: string, targetLanguage: string) => AvailabilityStatus;
-  bootstrapLanguagePairs: (pairs: LanguagePair[]) => Promise<void>;
   destroy: () => void;
 }
 
